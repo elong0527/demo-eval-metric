@@ -2,6 +2,7 @@
 
 # pyre-strict
 
+import ast
 from enum import Enum
 import re
 import textwrap
@@ -104,21 +105,36 @@ def format_polars_expr_list(
     return "\n".join(lines)
 
 
-def parse_json_tokens(column: str) -> tuple[str, ...] | None:
-    """Parse a JSON-like column label produced by Struct json serialization."""
+def parse_pivot_column(column: str) -> tuple[str, ...] | None:
+    """Parse structured column labels produced by Polars pivoting."""
+
+    try:
+        parsed = ast.literal_eval(column)
+    except (SyntaxError, ValueError):
+        parsed = None
+
+    if isinstance(parsed, dict):
+        prioritized = [parsed.get("estimate"), parsed.get("metric")]
+        tokens = [str(value) for value in prioritized if value is not None]
+        if not tokens:
+            tokens = [str(value) for value in parsed.values()]
+        return tuple(tokens) if tokens else None
+
+    if isinstance(parsed, (list, tuple)):
+        return tuple(str(token) for token in parsed)
 
     if column.startswith('{"') and column.endswith('"}') and '","' in column:
         inner = column[2:-2]
         return tuple(inner.split('","'))
+
     return None
 
 
-def parse_json_columns(columns: Sequence[str]) -> dict[str, tuple[str, ...]]:
-    """Return mapping of columns encoded as JSON strings to their token tuples."""
+def parse_pivot_columns(columns: Sequence[str]) -> dict[str, tuple[str, ...]]:
+    """Return mapping of structured pivot columns to their token tuples."""
 
-    parsed: dict[str, tuple[str, ...]] = {}
-    for column in columns:
-        tokens = parse_json_tokens(column)
-        if tokens is not None:
-            parsed[column] = tokens
-    return parsed
+    return {
+        column: tokens
+        for column in columns
+        if (tokens := parse_pivot_column(column)) is not None
+    }

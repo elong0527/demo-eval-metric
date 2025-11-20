@@ -6,7 +6,7 @@ import polars as pl
 
 from .ard import ARD
 from .evaluation_context import EstimateCatalog, FormatterContext
-from .utils import parse_json_tokens
+from .utils import parse_pivot_column
 
 
 def convert_to_ard(result_lf: pl.LazyFrame, context: FormatterContext) -> ARD:
@@ -109,9 +109,7 @@ def build_group_pivot(
 
     value_cols = [col for col in result.columns if col not in index_cols]
     default_cols = section_lookup.get("default", [])
-    default_cols = [
-        col for col in default_cols if col.startswith('{"') and col.endswith('"}')
-    ]
+    default_cols = [col for col in default_cols if parse_pivot_column(col) is not None]
 
     estimate_order_lookup: Mapping[str, int] = context.estimate_catalog.label_order
     metric_label_order_lookup: Mapping[str, int] = context.metric_catalog.label_order
@@ -127,9 +125,10 @@ def build_group_pivot(
 
     def sort_default(columns: list[str]) -> list[str]:
         def parse(column: str) -> tuple[str, str]:
-            inner = column[2:-2]
-            parts = inner.split('","')
-            return (parts[0], parts[1]) if len(parts) == 2 else (column, "")
+            tokens = parse_pivot_column(column)
+            if not tokens or len(tokens) < 2:
+                return (column, "")
+            return (tokens[0], tokens[1])
 
         if column_order_by == "metrics":
             return sorted(
@@ -304,7 +303,7 @@ def build_model_pivot(
         return tuple(order_positions)
 
     def column_sort_key(column: str) -> tuple[Any, ...]:
-        tokens = parse_json_tokens(column)
+        tokens = parse_pivot_column(column)
         if tokens is None:
             return (float("inf"), column)
         metric_label = tokens[-1] if tokens else ""
