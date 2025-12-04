@@ -15,6 +15,7 @@ dependencies = [
 dev = [
     "ruff>=0.12.11",
     "pyre-check>=0.9.22",
+    "mypy>=1.0.0",
 ]
 docs = [
     "jupyter>=1.0.0",
@@ -53,6 +54,7 @@ test = [
 dev = [
     "ruff>=0.12.11",
     "pyre-check>=0.9.22",
+    "mypy>=1.0.0",
 ]
 
 [tool.uv]
@@ -68,3 +70,6 @@ package-dir = {"" = "src"}
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["polars_eval_metrics*"]
+
+[tool.mypy]
+exclude = ["build/"]

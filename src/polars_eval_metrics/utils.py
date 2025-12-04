@@ -6,7 +6,7 @@ import ast
 from enum import Enum
 import re
 import textwrap
-from typing import Any, Sequence, Type
+from typing import Sequence, Type
 
 import polars as pl
 

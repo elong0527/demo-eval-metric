@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import json
-from typing import Any, Iterable, Mapping
+from typing import Any, Iterable, Mapping, cast
 
 import polars as pl
 
@@ -202,7 +202,7 @@ class ARD:
             return "NULL"
 
         value = ARD._stat_value(stat)
-        type_label = (stat.get("type") or "").lower()
+        value = ARD._stat_value(stat)
         fmt = stat.get("format")
         if fmt and value is not None:
             try:
@@ -356,7 +356,10 @@ class ARD:
             index = ["_idx"]
 
         pivoted = df.pivot(
-            index=index, on=columns, values=values, aggregate_function=aggregate
+            index=index,
+            on=columns,
+            values=values,
+            aggregate_function=cast(Any, aggregate),
         )
 
         if "_idx" in pivoted.columns:
@@ -464,7 +467,10 @@ class ARD:
             index = [index]
 
         return df.pivot(
-            on=on, index=index, values=values, aggregate_function=aggregate_function
+            on=on,
+            index=index,
+            values=values,
+            aggregate_function=cast(Any, aggregate_function),
         )
 
     def get_stats(self, include_metadata: bool = False) -> pl.DataFrame:

@@ -35,6 +35,7 @@ def _evaluate_metric_set(
     )
 
     compact = evaluator.evaluate()
+    assert isinstance(compact, pl.DataFrame)
     assert set(compact["metric"]) == {metric.name for metric in metrics}
 
     stats = ARD(evaluator.evaluate(collect=False)).get_stats()
@@ -72,6 +73,7 @@ class TestMetricEvaluatorBasic(BaseMetricEvaluatorTest):
         )
 
         result = evaluator.evaluate()
+        assert isinstance(result, pl.DataFrame)
 
         # Check structure
         self.assertEqual(len(result), 4)  # 2 metrics x 2 models
@@ -97,6 +99,7 @@ class TestMetricEvaluatorBasic(BaseMetricEvaluatorTest):
         )
 
         result = evaluator.evaluate()
+        assert isinstance(result, pl.DataFrame)
         self.assertEqual(len(result), 1)
         self.assertEqual(result["metric"][0], "mae")
         self.assertEqual(result["estimate"][0], "model_a")
@@ -113,6 +116,7 @@ class TestMetricEvaluatorBasic(BaseMetricEvaluatorTest):
         )
 
         minimal = evaluator.evaluate()
+        assert isinstance(minimal, pl.DataFrame)
         hidden_cols = {"stat", "stat_fmt", "context", "warning", "error"}
         self.assertTrue(hidden_cols.isdisjoint(set(minimal.columns)))
 
@@ -127,6 +131,7 @@ class TestMetricEvaluatorBasic(BaseMetricEvaluatorTest):
         )
 
         verbose = evaluator.evaluate(verbose=True)
+        assert isinstance(verbose, pl.DataFrame)
         self.assertTrue(
             {"stat", "context", "id", "groups"}.issubset(set(verbose.columns))
         )
@@ -148,10 +153,12 @@ class TestMetricEvaluatorScopes(BaseMetricEvaluatorTest):
         )
 
         compact = evaluator.evaluate()
+        assert isinstance(compact, pl.DataFrame)
 
         # Global scope should ignore estimates and groups
         self.assertEqual(len(compact), 1)
         verbose_df = evaluator.evaluate(verbose=True)
+        assert isinstance(verbose_df, pl.DataFrame)
         self.assertIsNone(verbose_df["estimate"][0])  # No estimate value for global
         self.assertIsNone(verbose_df["groups"][0])  # Groups ignored for global scope
         stats = _evaluate_ard(evaluator).get_stats()
@@ -170,7 +177,9 @@ class TestMetricEvaluatorScopes(BaseMetricEvaluatorTest):
         )
 
         compact = evaluator.evaluate()
+        assert isinstance(compact, pl.DataFrame)
         verbose_df = evaluator.evaluate(verbose=True)
+        assert isinstance(verbose_df, pl.DataFrame)
 
         # Model scope: one row per model, groups ignored
         self.assertEqual(len(compact), 2)
@@ -192,6 +201,7 @@ class TestMetricEvaluatorScopes(BaseMetricEvaluatorTest):
         )
 
         compact = evaluator.evaluate()
+        assert isinstance(compact, pl.DataFrame)
 
         # Group scope: one row per group, models aggregated
         self.assertEqual(len(compact), 2)
@@ -200,6 +210,7 @@ class TestMetricEvaluatorScopes(BaseMetricEvaluatorTest):
 
         # Check counts per group via verbose view
         verbose_df = evaluator.evaluate(verbose=True)
+        assert isinstance(verbose_df, pl.DataFrame)
         for row in verbose_df.iter_rows(named=True):
             group = row.get("groups")
             stat = row.get("stat")
@@ -221,6 +232,7 @@ class TestMetricEvaluatorScopes(BaseMetricEvaluatorTest):
         )
 
         compact = evaluator.evaluate()
+        assert isinstance(compact, pl.DataFrame)
 
         # Default scope: estimate x group combinations
         self.assertEqual(len(compact), 4)  # 2 models x 2 groups
@@ -243,8 +255,10 @@ class TestMetricEvaluatorTypes(BaseMetricEvaluatorTest):
         )
 
         compact = evaluator.evaluate()
+        assert isinstance(compact, pl.DataFrame)
         self.assertEqual(len(compact), 1)
         verbose_df = evaluator.evaluate(verbose=True)
+        assert isinstance(verbose_df, pl.DataFrame)
         context = verbose_df.select(pl.col("context").struct.field("metric_type"))
         self.assertEqual(context["metric_type"][0], "across_sample")
 
@@ -260,7 +274,9 @@ class TestMetricEvaluatorTypes(BaseMetricEvaluatorTest):
         )
 
         compact = evaluator.evaluate()
+        assert isinstance(compact, pl.DataFrame)
         verbose_df = evaluator.evaluate(verbose=True)
+        assert isinstance(verbose_df, pl.DataFrame)
         self.assertEqual(len(compact), 3)  # One row per subject
 
         context = verbose_df.select(pl.col("context").struct.field("metric_type"))
@@ -289,6 +305,7 @@ class TestMetricEvaluatorTypes(BaseMetricEvaluatorTest):
         )
 
         compact = evaluator.evaluate()
+        assert isinstance(compact, pl.DataFrame)
         self.assertEqual(len(compact), 1)  # Single aggregated result across subjects
         ard_df = _evaluate_ard(evaluator).collect()
         if "groups" in ard_df.columns:
@@ -310,7 +327,9 @@ class TestMetricEvaluatorTypes(BaseMetricEvaluatorTest):
         )
 
         compact = evaluator.evaluate()
+        assert isinstance(compact, pl.DataFrame)
         verbose_df = evaluator.evaluate(verbose=True)
+        assert isinstance(verbose_df, pl.DataFrame)
         self.assertEqual(len(compact), 9)  # Subject x visit combinations
 
         context = verbose_df.select(pl.col("context").struct.field("metric_type"))
@@ -340,6 +359,7 @@ class TestMetricEvaluatorTypes(BaseMetricEvaluatorTest):
         )
 
         compact = evaluator.evaluate()
+        assert isinstance(compact, pl.DataFrame)
         self.assertEqual(len(compact), 1)  # Single aggregated result across visits
         ard_df = _evaluate_ard(evaluator).collect()
         if "groups" in ard_df.columns:
@@ -477,6 +497,7 @@ class TestMetricEvaluatorGrouping(BaseMetricEvaluatorTest):
         )
 
         compact = evaluator.evaluate()
+        assert isinstance(compact, pl.DataFrame)
         self.assertEqual(len(compact), 2)  # Two treatment groups
         ard_df = _evaluate_ard(evaluator).collect()
         groups_unnested = ard_df.unnest(["groups"])
@@ -518,6 +539,7 @@ class TestMetricEvaluatorGrouping(BaseMetricEvaluatorTest):
         )
 
         compact = evaluator.evaluate()
+        assert isinstance(compact, pl.DataFrame)
 
         # Should have group x subgroup combinations
         self.assertIn("treatment", compact.columns)
@@ -550,8 +572,8 @@ class TestMetricEvaluatorAdvancedScenarios(BaseMetricEvaluatorTest):
             group_by=["treatment"],
         )
 
-        compact = evaluator.evaluate()
         verbose_df = evaluator.evaluate(verbose=True)
+        assert isinstance(verbose_df, pl.DataFrame)
 
         context_scope = verbose_df.select(
             pl.col("metric"),
@@ -704,6 +726,7 @@ class TestMetricEvaluatorEdgeCases(BaseMetricEvaluatorTest):
         # Empty data should result in empty results
         try:
             result = evaluator.evaluate()
+            assert isinstance(result, pl.DataFrame)
             self.assertEqual(len(result), 0)
         except Exception:
             # Some operations may fail on empty data, which is acceptable
@@ -728,6 +751,7 @@ class TestMetricEvaluatorEdgeCases(BaseMetricEvaluatorTest):
         # Should handle gracefully (result may be null/NaN)
         try:
             result = evaluator.evaluate()
+            assert isinstance(result, pl.DataFrame)
             self.assertEqual(len(result), 1)
         except Exception:
             # Operations on all-null data may fail, which is acceptable
@@ -750,6 +774,7 @@ class TestMetricEvaluatorEdgeCases(BaseMetricEvaluatorTest):
         )
 
         compact = evaluator.evaluate()
+        assert isinstance(compact, pl.DataFrame)
         self.assertEqual(len(compact), 1)
         stats = _evaluate_ard(evaluator).get_stats()
         self.assertEqual(stats["value"][0], 2.0)
@@ -794,10 +819,11 @@ class TestMetricEvaluatorEdgeCases(BaseMetricEvaluatorTest):
             metrics=[MetricDefine(name="mae")],
             ground_truth="actual",
             estimates=["model_a"],
-            filter_expr=pl.col("keep") == True,
+            filter_expr=pl.col("keep"),
         )
 
         result = evaluator.evaluate()
+        assert isinstance(result, pl.DataFrame)
         self.assertEqual(len(result), 1)
         # Should only use rows where keep=True (subjects 1, 2, 4)
         # MAE should be calculated on 3 rows, not 4

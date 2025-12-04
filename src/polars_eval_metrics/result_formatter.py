@@ -325,7 +325,7 @@ def build_model_pivot(
         result = result.with_columns(
             pl.col("estimate")
             .map_elements(
-                lambda val, mapping=estimate_label_map: mapping.get(val, val),
+                lambda val: estimate_label_map.get(str(val), str(val)),
                 return_dtype=pl.Utf8,
             )
             .alias("estimate_label")
@@ -501,7 +501,7 @@ def _expr_context_struct(schema: pl.Schema, context: FormatterContext) -> pl.Exp
             pl.col("estimate")
             .cast(pl.Utf8)
             .map_elements(
-                lambda val, mapping=label_map: mapping.get(val, val),
+                lambda val: label_map.get(str(val), str(val)),
                 return_dtype=pl.Utf8,
             )
             .alias("estimate_label")

@@ -1,20 +1,20 @@
-from __future__ import annotations
-
 """
 Helper functions for creating metrics from various sources.
 
 Simple, functional approach to metric creation without factory classes.
 """
 
+from __future__ import annotations
+
 # pyre-strict
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from .utils import parse_enum_value
 
 
 if TYPE_CHECKING:
-    from .metric_define import MetricDefine, MetricScope, MetricType
+    from .metric_define import MetricDefine
 
 
 def create_metric_from_dict(config: dict[str, Any]) -> MetricDefine:
@@ -42,10 +42,10 @@ def create_metrics(configs: list[dict[str, Any]] | list[str]) -> list[MetricDefi
     from .metric_define import MetricDefine
 
     if isinstance(configs[0], str):
-        str_configs: list[str] = configs  # pyre-ignore[9]
+        str_configs = cast(list[str], configs)
         return [MetricDefine(name=name) for name in str_configs]
 
-    dict_configs: list[dict[str, Any]] = configs  # pyre-ignore[9]
+    dict_configs = cast(list[dict[str, Any]], configs)
     return [create_metric_from_dict(config) for config in dict_configs]
 
 

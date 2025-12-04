@@ -1,11 +1,11 @@
-from __future__ import annotations
-
 """
 Unified Metric Evaluation Pipeline
 
 This module implements a simplified, unified evaluation pipeline for computing metrics
 using Polars LazyFrames with comprehensive support for scopes, groups, and subgroups.
 """
+
+from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
 from typing import Any, Sequence
@@ -443,7 +443,7 @@ class MetricEvaluator:
                     pl.col("estimate_name")
                     .cast(pl.Utf8)
                     .map_elements(
-                        lambda val, mapping=label_mapping: mapping.get(val, val),
+                        lambda val: label_mapping.get(str(val), str(val)),
                         return_dtype=pl.Utf8,
                     )
                     .alias("estimate_label"),
@@ -897,7 +897,7 @@ class MetricEvaluator:
                 pl.col("estimate")
                 .cast(pl.Utf8)
                 .map_elements(
-                    lambda val, mapping=estimate_label_map: mapping.get(val, val),
+                    lambda val: estimate_label_map.get(str(val), str(val)),
                     return_dtype=pl.Utf8,
                 )
                 .alias("estimate_label")

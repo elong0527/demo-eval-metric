@@ -7,7 +7,7 @@ from polars_eval_metrics import (
     MetricRegistry,
     MetricScope,
 )
-from polars_eval_metrics.ard import ARD
+
 from polars_eval_metrics.metric_registry import MetricInfo
 from tests.data_fixtures import get_metric_sample_df
 
@@ -75,11 +75,10 @@ class TestMetricRegistry(unittest.TestCase):
             estimates={"model_a": "Model A", "model_b": "Model B"},
         )
 
-        compact = evaluator.evaluate()
-        stats = ARD(evaluator.evaluate(collect=False)).get_stats()
         detailed = evaluator.evaluate(verbose=True).with_columns(
             pl.col("stat").struct.field("value_float").alias("_value_float")
         )
+        assert isinstance(detailed, pl.DataFrame)
 
         expected_bias = (
             metric_sample_df.lazy()
@@ -136,6 +135,7 @@ class TestMetricRegistry(unittest.TestCase):
         )
 
         verbose_result = evaluator.evaluate(verbose=True)
+        assert isinstance(verbose_result, pl.DataFrame)
         stat = verbose_result["stat"][0]
 
         self.assertEqual(stat["type"], "struct")
