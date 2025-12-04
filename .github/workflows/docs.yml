@@ -44,7 +44,7 @@ jobs:
       - name: Run tests with coverage
         run: |
           # Generate coverage report directly in docs/coverage directory (like rtflite)
-          coverage run --source=src/polars_eval_metrics -m unittest discover tests
+          coverage run --source=src/polars_eval_metrics -m unittest discover -s tests -t .
           coverage report
           coverage html -d docs/coverage
           echo "Coverage report generated at docs/coverage"
