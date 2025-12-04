@@ -1,9 +1,6 @@
 import polars as pl
-import pytest
 
-
-@pytest.fixture
-def metric_sample_df() -> pl.DataFrame:
+def get_metric_sample_df() -> pl.DataFrame:
     """Wide-form dataset with two model estimates and demographic groupings."""
     return pl.DataFrame(
         {
@@ -29,8 +26,7 @@ def metric_sample_df() -> pl.DataFrame:
     )
 
 
-@pytest.fixture
-def grouped_metric_df() -> pl.DataFrame:
+def get_grouped_metric_df() -> pl.DataFrame:
     """Compact dataset for scope-based tests with clear treatment groups."""
     return pl.DataFrame(
         {
@@ -43,8 +39,7 @@ def grouped_metric_df() -> pl.DataFrame:
     )
 
 
-@pytest.fixture
-def hierarchical_metric_df() -> pl.DataFrame:
+def get_hierarchical_metric_df() -> pl.DataFrame:
     """Hierarchical dataset with complete model coverage for every visit."""
     return pl.DataFrame(
         {

@@ -1,12 +1,13 @@
 """Integration tests that run exact examples from quickstart.qmd."""
 
+import unittest
 import polars as pl
 
 from polars_eval_metrics import MetricDefine, MetricEvaluator
-from test_utils import generate_sample_data
+from tests.test_utils import generate_sample_data
 
 
-class TestQuickstartIntegration:
+class TestQuickstartIntegration(unittest.TestCase):
     """Integration tests running exact examples from quickstart.qmd."""
 
     def test_example_data_generation(self):
@@ -15,7 +16,7 @@ class TestQuickstartIntegration:
         df = generate_sample_data(n_subjects=3, n_visits=2, n_groups=2)
 
         # Verify data structure
-        assert df.shape == (6, 9)  # 3 subjects x 2 visits = 6 rows, 9 columns
+        self.assertEqual(df.shape, (6, 9))  # 3 subjects x 2 visits = 6 rows, 9 columns
         expected_columns = [
             "subject_id",
             "visit_id",
@@ -27,7 +28,7 @@ class TestQuickstartIntegration:
             "model2",
             "weight",
         ]
-        assert df.columns == expected_columns
+        self.assertEqual(df.columns, expected_columns)
 
     def test_single_metric_mae_example(self):
         """Test single MAE metric example from quickstart.qmd."""
@@ -45,12 +46,12 @@ class TestQuickstartIntegration:
         result = evaluator.evaluate()
 
         # Verify result structure
-        assert result.shape[0] == 1  # Single result
-        assert "metric" in result.columns
-        assert "estimate" in result.columns
-        assert "value" in result.columns
-        assert result["metric"][0] == "mae"
-        assert result["estimate"][0] == "model1"
+        self.assertEqual(result.shape[0], 1)  # Single result
+        self.assertIn("metric", result.columns)
+        self.assertIn("estimate", result.columns)
+        self.assertIn("value", result.columns)
+        self.assertEqual(result["metric"][0], "mae")
+        self.assertEqual(result["estimate"][0], "model1")
 
     def test_equivalent_polars_single_metric(self):
         """Test equivalent Polars code example from quickstart.qmd."""
@@ -71,9 +72,9 @@ class TestQuickstartIntegration:
         framework_result = evaluator.evaluate(verbose=True)
 
         # Should match
-        assert (
-            abs(framework_result["stat"][0]["value_float"] - direct_result["mae"][0])
-            < 1e-10
+        self.assertLess(
+            abs(framework_result["stat"][0]["value_float"] - direct_result["mae"][0]),
+            1e-10,
         )
 
     def test_grouped_evaluation_example(self):
@@ -96,10 +97,10 @@ class TestQuickstartIntegration:
         result = evaluator.evaluate()
 
         # Verify structure: 2 treatments x 2 models x 2 metrics = 8 rows
-        assert result.shape[0] == 8
-        assert set(result["treatment"]) == {"A", "B"}
-        assert set(result["estimate"]) == {"model1", "model2"}
-        assert set(result["metric"]) == {"mae", "rmse"}
+        self.assertEqual(result.shape[0], 8)
+        self.assertEqual(set(result["treatment"]), {"A", "B"})
+        self.assertEqual(set(result["estimate"]), {"model1", "model2"})
+        self.assertEqual(set(result["metric"]), {"mae", "rmse"})
 
     def test_equivalent_polars_grouped_metric(self):
         """Test equivalent Polars code for grouped metrics."""
@@ -140,13 +141,13 @@ class TestQuickstartIntegration:
             (pl.col("treatment") == "A") & (pl.col("estimate") == "model1")
         )["stat"][0]["value_float"]
         direct_a_m1 = direct_result.filter(pl.col("treatment") == "A")["mae_model1"][0]
-        assert abs(framework_a_m1 - direct_a_m1) < 1e-10
+        self.assertLess(abs(framework_a_m1 - direct_a_m1), 1e-10)
 
         framework_a_m2 = framework_result.filter(
             (pl.col("treatment") == "A") & (pl.col("estimate") == "model2")
         )["stat"][0]["value_float"]
         direct_a_m2 = direct_result.filter(pl.col("treatment") == "A")["mae_model2"][0]
-        assert abs(framework_a_m2 - direct_a_m2) < 1e-10
+        self.assertLess(abs(framework_a_m2 - direct_a_m2), 1e-10)
 
     def test_subgroup_evaluation_example(self):
         """Test subgroup evaluation example from quickstart.qmd."""
@@ -169,9 +170,9 @@ class TestQuickstartIntegration:
         result = evaluator.evaluate()
 
         # Verify subgroup structure
-        assert "subgroup_name" in result.columns
-        assert "subgroup_value" in result.columns
-        assert set(result["subgroup_name"]) == {"gender", "race"}
+        self.assertIn("subgroup_name", result.columns)
+        self.assertIn("subgroup_value", result.columns)
+        self.assertEqual(set(result["subgroup_name"]), {"gender", "race"})
 
         # Check that we have results for different subgroup values
         gender_values = (
@@ -185,12 +186,12 @@ class TestQuickstartIntegration:
             .to_list()
         )
 
-        assert "F" in gender_values or "M" in gender_values  # At least one gender
-        assert (
+        self.assertTrue("F" in gender_values or "M" in gender_values)  # At least one gender
+        self.assertGreater(
             len(
                 [v for v in race_values if v in ["White", "Black", "Asian", "Hispanic"]]
-            )
-            > 0
+            ),
+            0,
         )  # At least one race
 
     def test_lazy_evaluation_explain_example(self):
@@ -210,10 +211,10 @@ class TestQuickstartIntegration:
         # From quickstart.qmd line 93 - should be able to explain
         explain_output = lazy_result.explain()
 
-        assert isinstance(lazy_result, pl.LazyFrame)
-        assert isinstance(explain_output, str)
-        assert any(
-            token in explain_output for token in ("SELECTION", "SELECT", "PROJECT")
+        self.assertIsInstance(lazy_result, pl.LazyFrame)
+        self.assertIsInstance(explain_output, str)
+        self.assertTrue(
+            any(token in explain_output for token in ("SELECTION", "SELECT", "PROJECT"))
         )
 
     def test_data_shape_and_columns_example(self):
@@ -225,16 +226,13 @@ class TestQuickstartIntegration:
         shape = df.shape
         columns = df.columns
 
-        assert shape == (
-            6,
-            9,
-        )  # Expected shape from example (3 subjects x 2 visits = 6 rows)
-        assert "subject_id" in columns
-        assert "visit_id" in columns
-        assert "treatment" in columns
-        assert "gender" in columns
-        assert "race" in columns
-        assert "actual" in columns
-        assert "model1" in columns
-        assert "model2" in columns
-        assert "weight" in columns
+        self.assertEqual(shape, (6, 9))  # Expected shape from example (3 subjects x 2 visits = 6 rows)
+        self.assertIn("subject_id", columns)
+        self.assertIn("visit_id", columns)
+        self.assertIn("treatment", columns)
+        self.assertIn("gender", columns)
+        self.assertIn("race", columns)
+        self.assertIn("actual", columns)
+        self.assertIn("model1", columns)
+        self.assertIn("model2", columns)
+        self.assertIn("weight", columns)

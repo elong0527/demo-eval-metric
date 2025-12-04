@@ -29,8 +29,6 @@ docs = [
     "quarto-cli>=1.6.40",
 ]
 test = [
-    "pytest>=8.0.0",
-    "pytest-cov>=4.0.0",
     "great-tables>=0.18.0",
 ]
 
@@ -48,8 +46,6 @@ docs = [
     "quarto-cli>=1.6.40",
 ]
 test = [
-    "pytest>=8.0.0",
-    "pytest-cov>=4.0.0",
     "great-tables>=0.18.0",
 ]
 dev = [

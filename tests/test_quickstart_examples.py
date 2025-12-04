@@ -1,14 +1,14 @@
 """Tests based on quickstart.qmd examples for minimal sufficient coverage."""
 
+import unittest
 import polars as pl
-import pytest
 
 from polars_eval_metrics import MetricDefine, MetricEvaluator
 from polars_eval_metrics.ard import ARD
-from test_utils import generate_sample_data as generate_test_data
+from tests.test_utils import generate_sample_data as generate_test_data
 
 
-class TestQuickstartSingleMetric:
+class TestQuickstartSingleMetric(unittest.TestCase):
     """Test single metric evaluation from quickstart.qmd."""
 
     def test_mae_single_model(self):
@@ -25,24 +25,24 @@ class TestQuickstartSingleMetric:
         result = evaluator.evaluate()
 
         # Check basic structure
-        assert result.shape[0] == 1  # One result row
-        assert "metric" in result.columns
-        assert "estimate" in result.columns
-        assert "value" in result.columns
-        assert "label" in result.columns
+        self.assertEqual(result.shape[0], 1)  # One result row
+        self.assertIn("metric", result.columns)
+        self.assertIn("estimate", result.columns)
+        self.assertIn("value", result.columns)
+        self.assertIn("label", result.columns)
 
         # Check values
-        assert result["metric"][0] == "mae"
-        assert result["estimate"][0] == "model1"
-        assert result["label"][0] == "mae"
+        self.assertEqual(result["metric"][0], "mae")
+        self.assertEqual(result["estimate"][0], "model1")
+        self.assertEqual(result["label"][0], "mae")
         formatted_value = result["value"][0]
-        assert isinstance(formatted_value, str)
-        assert formatted_value != ""
+        self.assertIsInstance(formatted_value, str)
+        self.assertNotEqual(formatted_value, "")
         stats = ARD(evaluator.evaluate(collect=False)).get_stats()
-        assert stats["value"][0] >= 0  # MAE is non-negative
+        self.assertGreaterEqual(stats["value"][0], 0)  # MAE is non-negative
 
 
-class TestQuickstartGroupedEvaluation:
+class TestQuickstartGroupedEvaluation(unittest.TestCase):
     """Test grouped evaluation from quickstart.qmd."""
 
     def test_mae_rmse_by_treatment(self):
@@ -63,7 +63,7 @@ class TestQuickstartGroupedEvaluation:
         compact = evaluator.evaluate()
 
         # Check structure: 2 treatments x 2 models x 2 metrics = 8 rows
-        assert compact.shape[0] == 8
+        self.assertEqual(compact.shape[0], 8)
 
         # Check compact columns
         expected_cols = {
@@ -73,16 +73,16 @@ class TestQuickstartGroupedEvaluation:
             "label",
             "value",
         }
-        assert expected_cols.issubset(set(compact.columns))
+        self.assertTrue(expected_cols.issubset(set(compact.columns)))
 
         # Check unique values
-        assert set(compact["treatment"]) == {"A", "B"}
-        assert set(compact["estimate"]) == {"model1", "model2"}
-        assert set(compact["metric"]) == {"mae", "rmse"}
+        self.assertEqual(set(compact["treatment"]), {"A", "B"})
+        self.assertEqual(set(compact["estimate"]), {"model1", "model2"})
+        self.assertEqual(set(compact["metric"]), {"mae", "rmse"})
 
         # Inspect verbose view for diagnostics
         verbose_result = evaluator.evaluate(verbose=True)
-        assert {"metric_type", "scope", "stat"}.issubset(set(verbose_result.columns))
+        self.assertTrue({"metric_type", "scope", "stat"}.issubset(set(verbose_result.columns)))
 
         non_null_values = [
             row["value_float"]
@@ -90,10 +90,10 @@ class TestQuickstartGroupedEvaluation:
             if row["value_float"] is not None
         ]
         if non_null_values:
-            assert min(non_null_values) >= 0
+            self.assertGreaterEqual(min(non_null_values), 0)
 
 
-class TestQuickstartSubgroupEvaluation:
+class TestQuickstartSubgroupEvaluation(unittest.TestCase):
     """Test subgroup evaluation from quickstart.qmd."""
 
     def test_subgroup_evaluation(self):
@@ -115,28 +115,28 @@ class TestQuickstartSubgroupEvaluation:
         result = evaluator.evaluate()
 
         # Check that subgroup columns exist
-        assert "subgroup_name" in result.columns
-        assert "subgroup_value" in result.columns
+        self.assertIn("subgroup_name", result.columns)
+        self.assertIn("subgroup_value", result.columns)
 
         # Check subgroup names are correct
-        assert set(result["subgroup_name"]) == {"gender", "race"}
+        self.assertEqual(set(result["subgroup_name"]), {"gender", "race"})
 
         # Check that we have results for each subgroup
         gender_results = result.filter(pl.col("subgroup_name") == "gender")
         race_results = result.filter(pl.col("subgroup_name") == "race")
 
-        assert len(gender_results) > 0
-        assert len(race_results) > 0
+        self.assertGreater(len(gender_results), 0)
+        self.assertGreater(len(race_results), 0)
 
         # Check subgroup values
-        assert "F" in gender_results["subgroup_value"].to_list()
-        assert "M" in gender_results["subgroup_value"].to_list()
-        assert "White" in race_results["subgroup_value"].to_list()
-        assert "Black" in race_results["subgroup_value"].to_list()
-        assert "Asian" in race_results["subgroup_value"].to_list()
+        self.assertIn("F", gender_results["subgroup_value"].to_list())
+        self.assertIn("M", gender_results["subgroup_value"].to_list())
+        self.assertIn("White", race_results["subgroup_value"].to_list())
+        self.assertIn("Black", race_results["subgroup_value"].to_list())
+        self.assertIn("Asian", race_results["subgroup_value"].to_list())
 
 
-class TestQuickstartDataIntegrity:
+class TestQuickstartDataIntegrity(unittest.TestCase):
     """Test data integrity and validation."""
 
     def test_column_order_and_sorting(self):
@@ -163,18 +163,18 @@ class TestQuickstartDataIntegrity:
         for row in result.iter_rows(named=True):
             # Check treatment ordering
             if prev_treatment is not None:
-                assert row["treatment"] >= prev_treatment
+                self.assertGreaterEqual(row["treatment"], prev_treatment)
 
             # Within same treatment, check subgroup and metric ordering
             if prev_treatment == row["treatment"]:
                 if prev_subgroup is not None:
-                    assert (
+                    self.assertTrue(
                         row["subgroup_value"] >= prev_subgroup
                         or row["subgroup_name"] != "gender"
                     )
 
                 if prev_subgroup == row["subgroup_value"] and prev_metric is not None:
-                    assert row["metric"] >= prev_metric or row["estimate"] != "model1"
+                    self.assertTrue(row["metric"] >= prev_metric or row["estimate"] != "model1")
 
             prev_treatment = row["treatment"]
             if row["subgroup_name"] == "gender":
@@ -194,26 +194,26 @@ class TestQuickstartDataIntegrity:
 
         # Test LazyFrame return
         lazy_result = evaluator.evaluate(collect=False)
-        assert isinstance(lazy_result, pl.LazyFrame)
+        self.assertIsInstance(lazy_result, pl.LazyFrame)
 
         # Test that it can be collected
         collected_result = lazy_result.collect()
-        assert isinstance(collected_result, pl.DataFrame)
+        self.assertIsInstance(collected_result, pl.DataFrame)
 
         # Test that default behavior returns DataFrame
         default_result = evaluator.evaluate()
-        assert isinstance(default_result, pl.DataFrame)
+        self.assertIsInstance(default_result, pl.DataFrame)
 
 
-class TestQuickstartErrorHandling:
+class TestQuickstartErrorHandling(unittest.TestCase):
     """Test error handling and edge cases."""
 
     def test_missing_columns_error(self):
         """Test error when required columns are missing."""
         df = generate_test_data().drop("actual")  # Remove ground truth column
 
-        with pytest.raises(
-            ValueError, match="Ground truth column 'actual' not found in data"
+        with self.assertRaisesRegex(
+            ValueError, "Ground truth column 'actual' not found in data"
         ):
             MetricEvaluator(
                 df=df,
@@ -226,7 +226,7 @@ class TestQuickstartErrorHandling:
         """Test error when no estimates are provided."""
         df = generate_test_data()
 
-        with pytest.raises(ValueError, match="No estimates provided"):
+        with self.assertRaisesRegex(ValueError, "No estimates provided"):
             MetricEvaluator(
                 df=df,
                 metrics=MetricDefine(name="mae"),
@@ -238,7 +238,7 @@ class TestQuickstartErrorHandling:
         """Test error when no metrics are provided."""
         df = generate_test_data()
 
-        with pytest.raises(ValueError, match="No metrics provided"):
+        with self.assertRaisesRegex(ValueError, "No metrics provided"):
             MetricEvaluator(
                 df=df,
                 metrics=[],  # Empty metrics
@@ -247,7 +247,7 @@ class TestQuickstartErrorHandling:
             )
 
 
-class TestQuickstartEquivalentCalculations:
+class TestQuickstartEquivalentCalculations(unittest.TestCase):
     """Test that results match equivalent direct Polars calculations."""
 
     def test_mae_equivalent_calculation(self):
@@ -271,7 +271,7 @@ class TestQuickstartEquivalentCalculations:
         direct_mae = direct_result["mae"][0]
 
         # Should be approximately equal (accounting for floating point precision)
-        assert abs(framework_mae - direct_mae) < 1e-10
+        self.assertLess(abs(framework_mae - direct_mae), 1e-10)
 
     def test_grouped_mae_equivalent_calculation(self):
         """Test that grouped MAE matches direct Polars calculation."""
@@ -300,4 +300,4 @@ class TestQuickstartEquivalentCalculations:
         for i in range(len(framework_result)):
             framework_mae = framework_result["stat"][i]["value_float"]
             direct_mae = direct_result["mae_model1"][i]
-            assert abs(framework_mae - direct_mae) < 1e-10
+            self.assertLess(abs(framework_mae - direct_mae), 1e-10)

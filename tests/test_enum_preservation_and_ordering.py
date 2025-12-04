@@ -7,15 +7,15 @@ These tests cover the recent changes made to:
 3. Row ordering options (group vs subgroup priority)
 """
 
-import pytest
+import unittest
 import polars as pl
 from polars_eval_metrics import MetricDefine, MetricEvaluator
 
 
-class TestEnumPreservationAndOrdering:
+class TestEnumPreservationAndOrdering(unittest.TestCase):
     """Test enum preservation and row ordering in pivot methods"""
 
-    @pytest.fixture
+    @property
     def sample_data_with_enum(self):
         """Create sample data with enum column"""
         data = {
@@ -28,7 +28,8 @@ class TestEnumPreservationAndOrdering:
                 "Middle",
                 "Senior",
                 "Young",
-            ],  # Mixed order
+                "Middle",
+            ][:6],  # Ensure length matches
             "region": ["North", "South", "North", "South", "North", "South"],
             "actual": [10, 12, 15, 18, 11, 13],
             "model_1": [11, 13, 14, 19, 12, 14],
@@ -40,18 +41,16 @@ class TestEnumPreservationAndOrdering:
         )
         return df
 
-    @pytest.fixture
+    @property
     def basic_metrics(self):
         """Basic metrics for testing"""
         return [MetricDefine(name="mae", label="MAE")]
 
-    def test_enum_preservation_single_subgroup(
-        self, sample_data_with_enum, basic_metrics
-    ):
+    def test_enum_preservation_single_subgroup(self):
         """Test that original enum ordering is preserved with single subgroup"""
         evaluator = MetricEvaluator(
-            df=sample_data_with_enum,
-            metrics=basic_metrics,
+            df=self.sample_data_with_enum,
+            metrics=self.basic_metrics,
             ground_truth="actual",
             estimates={"model_1": "Model 1"},
             group_by={"treatment": "Treatment"},
@@ -61,19 +60,17 @@ class TestEnumPreservationAndOrdering:
         result = evaluator.pivot_by_group()
 
         # Check that subgroup_value is an enum
-        assert isinstance(result.get_column("subgroup_value").dtype, pl.Enum)
+        self.assertIsInstance(result.get_column("subgroup_value").dtype, pl.Enum)
 
         # Check that enum categories match original order
         enum_categories = result.get_column("subgroup_value").dtype.categories.to_list()
-        assert enum_categories == ["Young", "Middle", "Senior"]
+        self.assertEqual(enum_categories, ["Young", "Middle", "Senior"])
 
-    def test_enum_preservation_multiple_subgroups(
-        self, sample_data_with_enum, basic_metrics
-    ):
+    def test_enum_preservation_multiple_subgroups(self):
         """Test enum preservation with multiple subgroups (enum + string)"""
         evaluator = MetricEvaluator(
-            df=sample_data_with_enum,
-            metrics=basic_metrics,
+            df=self.sample_data_with_enum,
+            metrics=self.basic_metrics,
             ground_truth="actual",
             estimates={"model_1": "Model 1"},
             group_by={"treatment": "Treatment"},
@@ -83,7 +80,7 @@ class TestEnumPreservationAndOrdering:
         result = evaluator.pivot_by_group()
 
         # Check that subgroup_value is an enum
-        assert isinstance(result.get_column("subgroup_value").dtype, pl.Enum)
+        self.assertIsInstance(result.get_column("subgroup_value").dtype, pl.Enum)
 
         # Check that enum categories include values from both subgroups
         enum_categories = result.get_column("subgroup_value").dtype.categories.to_list()
@@ -92,17 +89,17 @@ class TestEnumPreservationAndOrdering:
         age_values = [
             cat for cat in enum_categories if cat in ["Young", "Middle", "Senior"]
         ]
-        assert age_values == ["Young", "Middle", "Senior"]
+        self.assertEqual(age_values, ["Young", "Middle", "Senior"])
 
         # Region values should be included
         region_values = [cat for cat in enum_categories if cat in ["North", "South"]]
-        assert len(region_values) == 2  # Both North and South should be present
+        self.assertEqual(len(region_values), 2)  # Both North and South should be present
 
-    def test_row_ordering_subgroup_priority(self, sample_data_with_enum, basic_metrics):
+    def test_row_ordering_subgroup_priority(self):
         """Test that row_order_by='subgroup' respects enum order"""
         evaluator = MetricEvaluator(
-            df=sample_data_with_enum,
-            metrics=basic_metrics,
+            df=self.sample_data_with_enum,
+            metrics=self.basic_metrics,
             ground_truth="actual",
             estimates={"model_1": "Model 1"},
             group_by={"treatment": "Treatment"},
@@ -120,13 +117,13 @@ class TestEnumPreservationAndOrdering:
         )
 
         # Should be in enum order: Young, Middle, Senior
-        assert age_group_order == ["Young", "Middle", "Senior"]
+        self.assertEqual(age_group_order, ["Young", "Middle", "Senior"])
 
-    def test_row_ordering_group_priority(self, sample_data_with_enum, basic_metrics):
+    def test_row_ordering_group_priority(self):
         """Test that row_order_by='group' prioritizes treatment over subgroups"""
         evaluator = MetricEvaluator(
-            df=sample_data_with_enum,
-            metrics=basic_metrics,
+            df=self.sample_data_with_enum,
+            metrics=self.basic_metrics,
             ground_truth="actual",
             estimates={"model_1": "Model 1"},
             group_by={"treatment": "Treatment"},
@@ -144,15 +141,15 @@ class TestEnumPreservationAndOrdering:
 
         # Check that indices are contiguous (grouped)
         if a_indices:
-            assert a_indices == list(range(min(a_indices), max(a_indices) + 1))
+            self.assertEqual(a_indices, list(range(min(a_indices), max(a_indices) + 1)))
         if b_indices:
-            assert b_indices == list(range(min(b_indices), max(b_indices) + 1))
+            self.assertEqual(b_indices, list(range(min(b_indices), max(b_indices) + 1)))
 
-    def test_post_hoc_sorting_respects_enum(self, sample_data_with_enum, basic_metrics):
+    def test_post_hoc_sorting_respects_enum(self):
         """Test that manual sorting after pivot respects enum order"""
         evaluator = MetricEvaluator(
-            df=sample_data_with_enum,
-            metrics=basic_metrics,
+            df=self.sample_data_with_enum,
+            metrics=self.basic_metrics,
             ground_truth="actual",
             estimates={"model_1": "Model 1"},
             group_by={"treatment": "Treatment"},
@@ -171,15 +168,13 @@ class TestEnumPreservationAndOrdering:
         )
 
         # Should be in enum order
-        assert age_order == ["Young", "Middle", "Senior"]
+        self.assertEqual(age_order, ["Young", "Middle", "Senior"])
 
-    def test_pivot_by_model_enum_preservation(
-        self, sample_data_with_enum, basic_metrics
-    ):
+    def test_pivot_by_model_enum_preservation(self):
         """Test that pivot_by_model also preserves enum ordering"""
         evaluator = MetricEvaluator(
-            df=sample_data_with_enum,
-            metrics=basic_metrics,
+            df=self.sample_data_with_enum,
+            metrics=self.basic_metrics,
             ground_truth="actual",
             estimates={"model_1": "Model 1"},
             group_by={"treatment": "Treatment"},
@@ -189,9 +184,9 @@ class TestEnumPreservationAndOrdering:
         result = evaluator.pivot_by_model()
 
         # Check that subgroup_value is an enum with correct order
-        assert isinstance(result.get_column("subgroup_value").dtype, pl.Enum)
+        self.assertIsInstance(result.get_column("subgroup_value").dtype, pl.Enum)
         enum_categories = result.get_column("subgroup_value").dtype.categories.to_list()
-        assert enum_categories == ["Young", "Middle", "Senior"]
+        self.assertEqual(enum_categories, ["Young", "Middle", "Senior"])
 
     def test_fallback_to_display_order_without_enum(self):
         """Test fallback to display order when original data has no enum"""
@@ -216,13 +211,13 @@ class TestEnumPreservationAndOrdering:
         result = evaluator.pivot_by_group()
 
         # Should still create enum, but based on display order
-        assert isinstance(result.get_column("subgroup_value").dtype, pl.Enum)
+        self.assertIsInstance(result.get_column("subgroup_value").dtype, pl.Enum)
 
         # Categories should be in the order they appear in the result
         enum_categories = result.get_column("subgroup_value").dtype.categories.to_list()
-        assert len(enum_categories) > 0  # Should have some categories
+        self.assertGreater(len(enum_categories), 0)  # Should have some categories
 
-    def test_no_enum_conversion_single_value(self, basic_metrics):
+    def test_no_enum_conversion_single_value(self):
         """Test that enum conversion is skipped when only one unique value"""
         data = {
             "subject_id": ["S01", "S02"],
@@ -235,7 +230,7 @@ class TestEnumPreservationAndOrdering:
 
         evaluator = MetricEvaluator(
             df=df,
-            metrics=basic_metrics,
+            metrics=self.basic_metrics,
             ground_truth="actual",
             estimates={"model_1": "Model 1"},
             group_by={"treatment": "Treatment"},
@@ -247,6 +242,7 @@ class TestEnumPreservationAndOrdering:
         # Should not convert to enum if only one unique value
         subgroup_dtype = result.get_column("subgroup_value").dtype
         # Could be string or enum depending on implementation, but should work either way
-        assert subgroup_dtype in [pl.Utf8, pl.String] or isinstance(
-            subgroup_dtype, pl.Enum
+        self.assertTrue(
+            subgroup_dtype in [pl.Utf8, pl.String]
+            or isinstance(subgroup_dtype, pl.Enum)
         )

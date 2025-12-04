@@ -1,15 +1,15 @@
 """Test subgroup_value sorting in both pivot methods."""
 
+import unittest
 import polars as pl
-import pytest
 
 from polars_eval_metrics import MetricDefine, MetricEvaluator
 
 
-class TestSubgroupSorting:
+class TestSubgroupSorting(unittest.TestCase):
     """Test that subgroup_value is sorted correctly as the primary sort key."""
 
-    @pytest.fixture
+    @property
     def sample_data(self):
         """Data with deliberately unsorted subgroup values."""
         return pl.DataFrame(
@@ -23,7 +23,7 @@ class TestSubgroupSorting:
             }
         )
 
-    @pytest.fixture
+    @property
     def string_data(self):
         """Data with string subgroup values in reverse order."""
         return pl.DataFrame(
@@ -36,10 +36,10 @@ class TestSubgroupSorting:
             }
         )
 
-    def test_numeric_subgroup_sorting_pivot_by_model(self, sample_data):
+    def test_numeric_subgroup_sorting_pivot_by_model(self):
         """Test numeric subgroup_value sorting in pivot_by_model."""
         evaluator = MetricEvaluator(
-            df=sample_data,
+            df=self.sample_data,
             metrics=[MetricDefine(name="mae", label="MAE")],
             ground_truth="actual",
             estimates={"model_1": "Model A", "model_2": "Model B"},
@@ -51,14 +51,12 @@ class TestSubgroupSorting:
 
         # Should be sorted by subgroup_value first: 1, 2, 3
         subgroup_order = result["subgroup_value"].unique(maintain_order=True).to_list()
-        assert subgroup_order == ["1", "2", "3"], (
-            f"Expected ['1', '2', '3'], got {subgroup_order}"
-        )
+        self.assertEqual(subgroup_order, ["1", "2", "3"], f"Expected ['1', '2', '3'], got {subgroup_order}")
 
-    def test_numeric_subgroup_sorting_pivot_by_group(self, sample_data):
+    def test_numeric_subgroup_sorting_pivot_by_group(self):
         """Test numeric subgroup_value sorting in pivot_by_group."""
         evaluator = MetricEvaluator(
-            df=sample_data,
+            df=self.sample_data,
             metrics=[MetricDefine(name="mae", label="MAE")],
             ground_truth="actual",
             estimates={"model_1": "Model A", "model_2": "Model B"},
@@ -70,14 +68,12 @@ class TestSubgroupSorting:
 
         # Should be sorted by subgroup_value first: 1, 2, 3
         subgroup_order = result["subgroup_value"].unique(maintain_order=True).to_list()
-        assert subgroup_order == ["1", "2", "3"], (
-            f"Expected ['1', '2', '3'], got {subgroup_order}"
-        )
+        self.assertEqual(subgroup_order, ["1", "2", "3"], f"Expected ['1', '2', '3'], got {subgroup_order}")
 
-    def test_string_subgroup_sorting_pivot_by_model(self, string_data):
+    def test_string_subgroup_sorting_pivot_by_model(self):
         """Test string subgroup_value sorting in pivot_by_model."""
         evaluator = MetricEvaluator(
-            df=string_data,
+            df=self.string_data,
             metrics=[MetricDefine(name="mae", label="MAE")],
             ground_truth="actual",
             estimates={"model_1": "Model"},
@@ -89,14 +85,12 @@ class TestSubgroupSorting:
 
         # Should be sorted alphabetically: A, B, Z
         subgroup_order = result["subgroup_value"].unique(maintain_order=True).to_list()
-        assert subgroup_order == ["A", "B", "Z"], (
-            f"Expected ['A', 'B', 'Z'], got {subgroup_order}"
-        )
+        self.assertEqual(subgroup_order, ["A", "B", "Z"], f"Expected ['A', 'B', 'Z'], got {subgroup_order}")
 
-    def test_string_subgroup_sorting_pivot_by_group(self, string_data):
+    def test_string_subgroup_sorting_pivot_by_group(self):
         """Test string subgroup_value sorting in pivot_by_group."""
         evaluator = MetricEvaluator(
-            df=string_data,
+            df=self.string_data,
             metrics=[MetricDefine(name="mae", label="MAE")],
             ground_truth="actual",
             estimates={"model_1": "Model"},
@@ -108,14 +102,12 @@ class TestSubgroupSorting:
 
         # Should be sorted alphabetically: A, B, Z
         subgroup_order = result["subgroup_value"].unique(maintain_order=True).to_list()
-        assert subgroup_order == ["A", "B", "Z"], (
-            f"Expected ['A', 'B', 'Z'], got {subgroup_order}"
-        )
+        self.assertEqual(subgroup_order, ["A", "B", "Z"], f"Expected ['A', 'B', 'Z'], got {subgroup_order}")
 
-    def test_subgroup_priority_over_treatment(self, sample_data):
+    def test_subgroup_priority_over_treatment(self):
         """Test that subgroup_value sorting takes priority over treatment sorting."""
         evaluator = MetricEvaluator(
-            df=sample_data,
+            df=self.sample_data,
             metrics=[MetricDefine(name="mae", label="MAE")],
             ground_truth="actual",
             estimates={"model_1": "Model"},
@@ -144,14 +136,12 @@ class TestSubgroupSorting:
         actual_pattern = [
             (row["subgroup_value"], row["Treatment"]) for row in first_few_rows
         ]
-        assert actual_pattern == expected_pattern, (
-            f"Expected {expected_pattern}, got {actual_pattern}"
-        )
+        self.assertEqual(actual_pattern, expected_pattern, f"Expected {expected_pattern}, got {actual_pattern}")
 
-    def test_consistent_sorting_between_methods(self, sample_data):
+    def test_consistent_sorting_between_methods(self):
         """Test that both pivot methods produce consistent subgroup ordering."""
         evaluator = MetricEvaluator(
-            df=sample_data,
+            df=self.sample_data,
             metrics=[MetricDefine(name="mae", label="MAE")],
             ground_truth="actual",
             estimates={"model_1": "Model A", "model_2": "Model B"},
@@ -169,43 +159,9 @@ class TestSubgroupSorting:
             result_group["subgroup_value"].unique(maintain_order=True).to_list()
         )
 
-        assert model_order == group_order == ["1", "2", "3"], (
-            f"Methods inconsistent: model={model_order}, group={group_order}"
-        )
+        self.assertEqual(model_order, group_order, f"Methods inconsistent: model={model_order}, group={group_order}")
+        self.assertEqual(model_order, ["1", "2", "3"])
 
 
 if __name__ == "__main__":
-    # Run tests standalone
-    test_instance = TestSubgroupSorting()
-
-    # Create sample data
-    sample_data = pl.DataFrame(
-        {
-            "treatment": ["A", "A", "A", "B", "B", "B"] * 4,
-            "priority": [3, 1, 2, 3, 1, 2] * 4,
-            "subject_id": list(range(1, 25)),
-            "actual": [1.0, 2.0, 3.0] * 8,
-            "model_1": [1.1, 2.1, 2.9] * 8,
-            "model_2": [0.9, 1.9, 3.1] * 8,
-        }
-    )
-
-    string_data = pl.DataFrame(
-        {
-            "treatment": ["A", "A", "A", "B", "B", "B"] * 4,
-            "category": ["Z", "B", "A", "Z", "B", "A"] * 4,
-            "subject_id": list(range(1, 25)),
-            "actual": [1.0, 2.0, 3.0] * 8,
-            "model_1": [1.1, 2.1, 2.9] * 8,
-        }
-    )
-
-    # Run all tests
-    print("Testing subgroup_value sorting...")
-    test_instance.test_numeric_subgroup_sorting_pivot_by_model(sample_data)
-    test_instance.test_numeric_subgroup_sorting_pivot_by_group(sample_data)
-    test_instance.test_string_subgroup_sorting_pivot_by_model(string_data)
-    test_instance.test_string_subgroup_sorting_pivot_by_group(string_data)
-    test_instance.test_subgroup_priority_over_treatment(sample_data)
-    test_instance.test_consistent_sorting_between_methods(sample_data)
-    print("[PASS] All subgroup sorting tests passed!")
+    unittest.main()
