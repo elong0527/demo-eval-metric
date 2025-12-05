@@ -47,7 +47,7 @@ jobs:
 
       - name: Run Tests
         run: |
-          uv run coverage run --source=src/polars_eval_metrics -m unittest discover -s tests -t .
+          uv run coverage run --source=src/healthmetrics -m unittest discover -s tests -t .
           uv run coverage report
           uv run coverage xml
 
