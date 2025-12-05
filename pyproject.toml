@@ -91,6 +91,7 @@ package-dir = {"" = "src"}
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["healthmetrics*"]
+exclude = ["tests*", "docs*", "*.tests", "*.tests.*"]
 
 [tool.mypy]
 exclude = ["build/"]
