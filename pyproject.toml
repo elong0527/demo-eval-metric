@@ -1,6 +1,6 @@
 [project]
 name = "healthmetrics"
-version = "0.1.0"
+version = "0.2.0"
 description = "Health Metrics for within and between subjects / sessions"
 authors = [
     { name = "Yilong Zhang", email = "elong0527@gmail.com" },
