@@ -1,9 +1,11 @@
 # HealthMetrics
 
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![Tests](https://github.com/elong0527/demo_eval_metric/actions/workflows/test.yml/badge.svg)](https://github.com/elong0527/demo_eval_metric/actions/workflows/test.yml)
-[![Documentation](https://github.com/elong0527/demo_eval_metric/actions/workflows/docs.yml/badge.svg)](https://github.com/elong0527/demo_eval_metric/actions/workflows/docs.yml)
-[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
+[![Python Versions](https://img.shields.io/pypi/pyversions/healthmetrics.svg)](https://pypi.org/project/healthmetrics/)
+[![PyPI](https://img.shields.io/pypi/v/healthmetrics)](https://pypi.org/project/healthmetrics/)
+[![License](https://img.shields.io/github/license/elong0527/healthmetrics)](https://github.com/elong0527/healthmetrics/blob/main/LICENSE)
+[![CI Build](https://github.com/elong0527/healthmetrics/actions/workflows/ci.yml/badge.svg)](https://github.com/elong0527/healthmetrics/actions/workflows/ci.yml)
+[![Codecov](https://codecov.io/gh/elong0527/healthmetrics/graph/badge.svg)](https://codecov.io/gh/elong0527/healthmetrics)
 
 Health Metrics for within and between subjects / sessions
 
