@@ -14,7 +14,7 @@ First, ensure the package is available in your Python environment:
 # Import the package
 import polars as pl
 
-from polars_eval_metrics import MetricDefine, MetricEvaluator
+from healthmetrics import MetricDefine, MetricEvaluator
 ```
 
 # Example Data 
